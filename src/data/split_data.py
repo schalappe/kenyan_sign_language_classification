@@ -17,6 +17,6 @@ train_labels = read_csv(INPUT_CSV, header="infer")
 for image_name in tqdm(
     train_labels["img_IDS"], ncols=100, desc="Move image for training: "
 ):
-    shutil.move(join(IMAGES_PATH, image_name) + '.jpg', TRAIN_PATH)
+    shutil.move(join(IMAGES_PATH, image_name) + ".jpg", TRAIN_PATH)
 
 print("Successfully complete")
