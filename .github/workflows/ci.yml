@@ -35,7 +35,7 @@ jobs:
         pip install black flake8 mypy pytest hypothesis
     - name: Run black
       run:
-        black --check .
+        black --check ./src
     - name: Run flake8
       run: flake8
     - name: Run Mypy
