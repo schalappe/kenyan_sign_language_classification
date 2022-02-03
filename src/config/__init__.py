@@ -8,4 +8,5 @@ from .kenyan_sign_language_config import (
     ROOT_PATH,
     SUBMIT_PATH,
     TRAIN_PATH,
+    CLASS_NAMES
 )

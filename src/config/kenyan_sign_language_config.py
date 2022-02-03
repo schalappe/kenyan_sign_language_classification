@@ -16,3 +16,5 @@ LOGS_PATH = join(DATA_PATH, "logs")
 FEATURES_PATH = join(DATA_PATH, "features")
 
 INPUT_CSV = join(DATA_PATH, "Train.csv")
+
+CLASS_NAMES = ["Church", "Enough/Satisfied", "Friend", "Love", "Me", "Mosque", "Seat", "Temple", "You"]
