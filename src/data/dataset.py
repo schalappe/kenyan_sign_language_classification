@@ -3,9 +3,9 @@
 Set of class for managing data
 """
 from os.path import exists as check_exists_file
+from typing import Generator
 
 from h5py import File as H5File
-from numpy import arange, array
 from tensorflow.keras.utils import to_categorical
 
 
@@ -13,14 +13,20 @@ class DatasetWriter:
     """
     Store data into h5py dataset
     """
+
     def __init__(self, dims: tuple, output_path: str, buf_size: int = 1000) -> None:
         """
         Initialization
+        Parameters
+        ----------
+        dims: tuple
+            shape of dataset
 
-        Args:
-            dims (tuple): shape of dataset
-            output_path (str): path where to store the dataset
-            buf_size (int): length of the buffer
+        output_path: str
+            path where to store the dataset
+
+        buf_size: int
+            length of the buffer
         """
         # check if the output path exists
         if check_exists_file(output_path):
@@ -30,9 +36,9 @@ class DatasetWriter:
             )
 
         # store image/feature and class label
-        self.db = H5File(output_path, "w")
-        self.data = self.db.create_dataset("images", dims, dtype="float")
-        self.labels = self.db.create_dataset("labels", (dims[0],), dtype="int")
+        self.database = H5File(output_path, "w")
+        self.data = self.database.create_dataset("images", dims, dtype="float")
+        self.labels = self.database.create_dataset("labels", (dims[0],), dtype="int")
 
         # buffer size and initialization
         self.buf_size = buf_size
@@ -42,10 +48,13 @@ class DatasetWriter:
     def add(self, rows: list, labels: list) -> None:
         """
         Add data to the buffer
+        Parameters
+        ----------
+        rows: list
+            list of data
 
-        Args:
-            rows (list): list of data
-            labels (list): list of labels
+        labels: list
+            list of labels
         """
         # add the rows and the labels to the buffer
         self.buffer["data"].extend(rows)
@@ -75,7 +84,7 @@ class DatasetWriter:
             self.flush()
 
         # close the dataset
-        self.db.close()
+        self.database.close()
 
 
 class DatasetGenerator:
@@ -83,51 +92,44 @@ class DatasetGenerator:
     Generator for dataset
     """
 
-    def __init__(self, db_path: str, batch_size: int, binarize: bool, classes: int, preprocessors: list = None) -> None:
+    def __init__(self, db_path: str, binarize: bool, classes: int) -> None:
         """
-        Initialization
-        Args:
-            db_path (str): Path of dataset stored
-            batch_size (int): size of batch
-            preprocessors (list): list of processors
+        Initialization of generators
+        Parameters
+        ----------
+        db_path: str
+            Path of stored dataset
+
+        binarize: bool
+            True if it's needed to binarize label
+
+        classes: int
+            Number of classes
         """
         # store
-        self.batch_size = batch_size
-        self.preprocessors = preprocessors
         self.binarize = binarize if binarize else False
         self.classes = classes if binarize and classes else 1
 
         # open the HDF5 database
-        self.db = H5File(db_path, "r")
-        self.num_images = self.db["labels"].shape[0]
+        self.database = H5File(db_path, "r")
+        self.num_images = self.database["labels"].shape[0]
 
-    def generator(self) -> tuple:
+    def generator(self) -> Generator:
         """
         Continuously gives images and labels
-        Returns:
-            []: Array of images && Array of labels
+        Returns
+        -------
+        Generator:
+            Image && Label
         """
-        for i in arange(0, self.num_images, self.batch_size):
+        for i in range(self.num_images):
             # extract the images and labels from the HDF dataset
-            images = self.db["images"][i : i + self.batch_size]
-            labels = self.db["labels"][i : i + self.batch_size]
+            images = self.database["images"][i]
+            labels = self.database["labels"][i]
 
             # check to see if the labels should be binarized
             if self.binarize:
                 labels = to_categorical(labels, self.classes)
-
-            # if our preprocessors are not None
-            if self.preprocessors is not None:
-                # the list of processed images
-                proc_images = []
-
-                # loop over the images
-                for image in images:
-                    # loop over the preprocessors
-                    for p in self.preprocessors:
-                        image = p.preprocess(image)
-                    proc_images.append(image)
-                images = array(proc_images)
 
             # yield a tuple of images and labels
             yield images, labels
@@ -137,4 +139,4 @@ class DatasetGenerator:
         Close the generator
         """
         # close the database
-        self.db.close()
+        self.database.close()
