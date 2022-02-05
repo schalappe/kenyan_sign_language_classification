@@ -83,7 +83,7 @@ def gaussian_noise(image: tf.Tensor) -> tf.Tensor:
         Noised image
     """
     noise = tf.random.normal(
-        shape=tf.shape(image), mean=0.1, stddev=0.1, dtype=tf.float32
+        shape=tf.shape(image), mean=0.1, stddev=0.1, dtype=image.dtype
     )
     noise_img = tf.add(image, noise)
     return tf.clip_by_value(noise_img, 0.0, 1.0)

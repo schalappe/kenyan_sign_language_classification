@@ -20,7 +20,7 @@ def simple_resize(
         (tf.Tensor): new resized image
     """
     assert isinstance(image, tf.Tensor), "Image must be a Tensor"
-    return tf.image.resize(image, (height, width), method=method) / 225.0
+    return tf.image.resize(image, (height, width), method=method)
 
 
 def aspect_resize(
@@ -63,4 +63,4 @@ def aspect_resize(
     (i_height, i_width) = resized.shape[:2]
     resized = resized[d_height : i_height - d_height, d_width : i_width - d_width]
 
-    return tf.image.resize(resized, (height, width), method=method) / 255.0
+    return tf.image.resize(resized, (height, width), method=method)

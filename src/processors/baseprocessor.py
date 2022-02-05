@@ -25,3 +25,19 @@ def load_image(image_path: str) -> tf.Tensor:
 
     # return the image
     return image
+
+
+def rescale_image(image: tf.Tensor) -> tf.Tensor:
+    """
+    Rescal an image
+    Parameters
+    ----------
+    image: tf.Tensor
+        Image to process
+
+    Returns
+    -------
+    tf.Tensor:
+        Rescaled image
+    """
+    return image / 255.0
