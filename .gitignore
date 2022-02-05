@@ -133,3 +133,9 @@ dmypy.json
 
 # Data
 /data/
+
+# Model
+/models/
+
+# unknow file
+.DS_Store
