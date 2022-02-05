@@ -1,5 +1,7 @@
 from .kenyan_sign_language_config import (
+    CLASS_NAMES,
     DATA_PATH,
+    DIMS_IMAGE,
     FEATURES_PATH,
     IMAGES_PATH,
     INPUT_CSV,
@@ -8,5 +10,4 @@ from .kenyan_sign_language_config import (
     ROOT_PATH,
     SUBMIT_PATH,
     TRAIN_PATH,
-    CLASS_NAMES
 )
