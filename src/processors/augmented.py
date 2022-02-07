@@ -5,12 +5,13 @@ Set of function use to augment image
 import tensorflow as tf
 
 
-def random_hue(image: tf.Tensor) -> tf.Tensor:
+@tf.function
+def random_hue(images: tf.Tensor) -> tf.Tensor:
     """
     Adjust the hue of RGB images by a random factor
     Parameters
     ----------
-    image: tf.Tensor
+    images: tf.Tensor
         Image to process
 
     Returns
@@ -18,15 +19,19 @@ def random_hue(image: tf.Tensor) -> tf.Tensor:
     tf.Tensor
         Augmented image
     """
-    return tf.image.random_hue(image, 0.08)
+    if len(images.shape) == 3:
+        return tf.image.random_hue(images, 0.08)
+
+    return tf.map_fn(fn=lambda image: tf.image.random_hue(image, 0.08), elems=images)
 
 
-def random_saturation(image: tf.Tensor) -> tf.Tensor:
+@tf.function
+def random_saturation(images: tf.Tensor) -> tf.Tensor:
     """
     Adjust the saturation of RGB images by a random factor
     Parameters
     ----------
-    image: tf.Tensor
+    images: tf.Tensor
         Image to process
 
     Returns
@@ -34,15 +39,21 @@ def random_saturation(image: tf.Tensor) -> tf.Tensor:
     tf.Tensor
         Augmented image
     """
-    return tf.image.random_saturation(image, 0.6, 1.6)
+    if len(images.shape) == 3:
+        return tf.image.random_saturation(images, 0.6, 1.6)
+
+    return tf.map_fn(
+        fn=lambda image: tf.image.random_saturation(image, 0.6, 1.6), elems=images
+    )
 
 
-def random_brightness(image: tf.Tensor) -> tf.Tensor:
+@tf.function
+def random_brightness(images: tf.Tensor) -> tf.Tensor:
     """
     Adjust the brightness of images by a random factor
     Parameters
     ----------
-    image: tf.Tensor
+    images: tf.Tensor
         Image to process
 
     Returns
@@ -50,15 +61,21 @@ def random_brightness(image: tf.Tensor) -> tf.Tensor:
     tf.Tensor
         Augmented image
     """
-    return tf.image.random_brightness(image, 0.05)
+    if len(images.shape) == 3:
+        return tf.image.random_brightness(images, 0.05)
+
+    return tf.map_fn(
+        fn=lambda image: tf.image.random_brightness(image, 0.05), elems=images
+    )
 
 
-def random_contrast(image: tf.Tensor) -> tf.Tensor:
+@tf.function
+def random_contrast(images: tf.Tensor) -> tf.Tensor:
     """
     Adjust the contrast of an image or images by a random factor
     Parameters
     ----------
-    image: tf.Tensor
+    images: tf.Tensor
         Image to process
 
     Returns
@@ -66,15 +83,21 @@ def random_contrast(image: tf.Tensor) -> tf.Tensor:
     tf.Tensor
         Augmented image
     """
-    return tf.image.random_contrast(image, 0.7, 1.3)
+    if len(images.shape) == 3:
+        return tf.image.random_contrast(images, 0.7, 1.3)
+
+    return tf.map_fn(
+        fn=lambda image: tf.image.random_contrast(image, 0.7, 1.3), elems=images
+    )
 
 
-def gaussian_noise(image: tf.Tensor) -> tf.Tensor:
+@tf.function
+def gaussian_noise(images: tf.Tensor) -> tf.Tensor:
     """
     Add gaussian noise to an image
     Parameters
     ----------
-    image: tf.Tensor
+    images: tf.Tensor
         Image to process
 
     Returns
@@ -82,8 +105,44 @@ def gaussian_noise(image: tf.Tensor) -> tf.Tensor:
     tf.Tensor
         Noised image
     """
-    noise = tf.random.normal(
-        shape=tf.shape(image), mean=0.1, stddev=0.1, dtype=image.dtype
-    )
-    noise_img = tf.add(image, noise)
-    return tf.clip_by_value(noise_img, 0.0, 1.0)
+
+    def noised_image(image: tf.Tensor) -> tf.Tensor:
+        noise = tf.random.normal(
+            shape=tf.shape(image), mean=0.1, stddev=0.1, dtype=image.dtype
+        )
+        noise_img = tf.add(image, noise)
+        return tf.clip_by_value(noise_img, 0.0, 1.0)
+
+    if len(images.shape) == 3:
+        return noised_image(images)
+
+    return tf.map_fn(fn=lambda image: noised_image(image), elems=images)
+
+
+@tf.function
+def random_augmentation(images: tf.Tensor) -> tf.Tensor:
+    """
+    Apply random augmentation
+    Parameters
+    ----------
+    images: tf.Tensor
+        Image to augment
+
+    Returns
+    -------
+    tf.Tensor:
+        Augmented images
+    """
+    augmentation = [
+        random_hue,
+        random_saturation,
+        random_brightness,
+        random_contrast,
+        gaussian_noise,
+    ]
+    for func in augmentation:
+        # Apply an augmentation only in 50% of the cases.
+        if tf.random.uniform([], 0, 1) > 0.5:
+            images = func(images)
+
+    return images

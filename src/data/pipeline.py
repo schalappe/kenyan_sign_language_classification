@@ -2,150 +2,45 @@
 """
 Set of function for pipeline
 """
+from os.path import exists as check_exist_file
+
 import tensorflow as tf
 
-from src.config import CLASS_NAMES, DIMS_IMAGE
-from src.data import DatasetGenerator
-from src.processors import (
-    extract_patches,
-    gaussian_noise,
-    random_brightness,
-    random_contrast,
-    random_hue,
-    random_saturation,
-    rescale_image,
-    simple_resize,
-)
+from src.config import CLASS_NAMES, DIMS_MODEL
+from src.processors import random_augmentation
+
+from .utils import parse_tfr_element
 
 
-def prepare(
-    dataset: tf.data.Dataset,
-    batch: int,
-    height: int,
-    width: int,
-    shuffle: bool,
-    augment: bool,
-) -> tf.data.Dataset:
-    """
-    Apply preprocessing function to a dataset
-    Parameters
-    ----------
-    dataset: tf.data.Dataset
-        Dataset to prepare
+def prepare_from_tfrecord(tfrecord: str, batch: int, train: bool):
+    assert check_exist_file(tfrecord), "Le TFRecord n'existe pas"
 
-    batch: int
-        Batch size
+    # load data for TFRecord
+    dataset = tf.data.TFRecordDataset(tfrecord)
 
-    height: int
-        Height of resized image
-
-    width: int
-        Width of resized image
-
-    shuffle: bool
-        True if it's needed to shuffle data
-
-    augment: bool
-        True if it's needed to augment data
-
-    Returns
-    -------
-    tf.data.Dataset:
-        Prepared dataset
-    """
-    # Resize image
-    if augment:
-        dataset = dataset.map(
-            lambda image, label: (extract_patches(image, height, width), label),
-            num_parallel_calls=tf.data.AUTOTUNE,
-        )
-    else:
-        dataset = dataset.map(
-            lambda image, label: (simple_resize(image, height, width), label),
-            num_parallel_calls=tf.data.AUTOTUNE,
-        )
-
-    # Rescale image
+    # decode and resize image
+    dataset = dataset.map(parse_tfr_element).cache()
     dataset = dataset.map(
-        lambda image, label: (rescale_image(image), label),
+        lambda image, label: (
+            tf.image.resize(image, [DIMS_MODEL[0], DIMS_MODEL[0]]),
+            tf.one_hot(label, len(CLASS_NAMES)),
+        ),
         num_parallel_calls=tf.data.AUTOTUNE,
     )
 
-    if shuffle:
-        dataset = dataset.shuffle(1000)
+    # shuffle if it's training
+    dataset = dataset.shuffle(1000).cache()
 
     # Batch all datasets
     dataset = dataset.batch(batch)
 
     # Use data augmentation only on the training set.
-    if augment:
-        augmentation = [
-            random_hue,
-            random_saturation,
-            random_brightness,
-            random_contrast,
-            gaussian_noise,
-        ]
-        for func in augmentation:
-            dataset = dataset.cache()
-            # Apply an augmentation only in 50% of the cases.
-            dataset.map(
-                lambda image, label: (
-                    tf.cond(
-                        tf.random.uniform([], 0, 1) > 0.75,
-                        lambda: func(image),
-                        lambda: image,
-                    ),
-                    label,
-                ),
-                num_parallel_calls=tf.data.AUTOTUNE,
-            )
+    if train:
+        # Apply an augmentation only in 75% of the cases.
+        dataset = dataset.map(
+            lambda image, label: (random_augmentation(image), label),
+            num_parallel_calls=tf.data.AUTOTUNE,
+        )
 
     # Use buffered prefetching on all datasets
     return dataset.prefetch(buffer_size=tf.data.AUTOTUNE)
-
-
-def load_dataset_from_generator(
-    generator: DatasetGenerator, batch: int, shape: int, train: bool
-) -> tf.data.Dataset:
-    """
-    Load a dataset from generator
-    Parameters
-    ----------
-    generator: DatasetGenerator
-        Generator of image
-
-    batch: int
-        Batch size
-
-    shape:
-        Heigth and Width (same)
-
-    train: bool
-        If True, shuffle and augment data
-
-    Returns
-    -------
-    tf.data.Dataset:
-        Dataset ready to train or test
-    """
-    # output shapes and types
-    output_types = (tf.float64, tf.uint8)
-    output_shapes = (DIMS_IMAGE, (len(CLASS_NAMES),))
-
-    # load from generator
-    dataset = tf.data.Dataset.from_generator(
-        generator.generator, output_shapes=output_shapes, output_types=output_types
-    )
-
-    # prepare dataset
-    dataset = prepare(
-        dataset=dataset,
-        batch=batch,
-        height=shape,
-        width=shape,
-        shuffle=train,
-        augment=train,
-    )
-
-    return dataset
