@@ -15,7 +15,7 @@ from src.config import CLASS_NAMES, DIMS_IMAGE, IMAGES_PATH, INPUT_CSV
 from src.processors import load_image
 
 
-def split_and_load_data() -> tuple:
+def split_and_load_data(preprocess_input=None, test_size: float = 0.2) -> tuple:
     """
     Split dataset in train and test.
     Ratio: 80/20
@@ -33,7 +33,9 @@ def split_and_load_data() -> tuple:
     label_set = list(train_labels.Label)
 
     # load data
-    train_set = [load_image(path) for path in tqdm(train_set, ncols=100)]
+    train_set = [
+        load_image(path, preprocess_input) for path in tqdm(train_set, ncols=100, leave=False)
+    ]
 
     # encode
     label_encoder = LabelEncoder()
@@ -42,10 +44,10 @@ def split_and_load_data() -> tuple:
 
     # split
     x_train, x_val, y_train, y_val = train_test_split(
-        train_set, label_set, test_size=0.2, random_state=1337, stratify=label_set
+        train_set, label_set, test_size=test_size, random_state=1337, stratify=label_set
     )
 
-    return x_train, x_val, y_train, y_val
+    return train_set, x_train, x_val, label_set, y_train, y_val
 
 
 def _bytes_feature(value: Any) -> tf.train.Feature:

@@ -24,7 +24,7 @@ def write_images_to_tfr(images: tuple, labels: tuple, path_record: str) -> None:
     """
     count = 0
     with tf.io.TFRecordWriter(path_record) as file_writer:
-        for index in tqdm(range(len(images)), ncols=100):
+        for index in tqdm(range(len(images)), ncols=100, leave=False):
             # get the data we want to write
             current_image = images[index]
             current_label = labels[index]
