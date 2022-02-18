@@ -8,6 +8,7 @@ from .kenyan_sign_language_config import (
     IMAGES_PATH,
     INPUT_CSV,
     MODEL_PATH,
+    OUTPUT_CSV,
     ROOT_PATH,
     SUBMIT_PATH,
 )

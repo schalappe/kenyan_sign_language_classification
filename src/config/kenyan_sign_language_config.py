@@ -14,6 +14,7 @@ SUBMIT_PATH = join(DATA_PATH, "submit")
 FEATURES_PATH = join(DATA_PATH, "features")
 
 INPUT_CSV = join(DATA_PATH, "Train.csv")
+OUTPUT_CSV = join(DATA_PATH, "Test.csv")
 
 CLASS_NAMES = [
     "Church",

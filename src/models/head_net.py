@@ -12,6 +12,8 @@ class FCHeadNet:
     def build(base_model: Any, len_class: int, dense_unit: int) -> Any:
         """
         Fully connected header
+        Flatten -> FC -> Output
+
         Parameters
         ----------
         base_model: Any
@@ -45,6 +47,8 @@ class FCHeadNetV2:
     def build(base_model: Any, len_class: int, dense_unit: int) -> Any:
         """
         Fully connected header
+        AveragePooling -> Flatten -> FC -> Output
+
         Parameters
         ----------
         base_model: Any
@@ -79,6 +83,8 @@ class FCHeadNetV3:
     def build(base_model: Any, len_class: int, dense_unit: int) -> Any:
         """
         Fully connected header
+        AveragePooling -> Flatten -> FC -> FC -> Output
+
         Parameters
         ----------
         base_model: Any
@@ -115,6 +121,8 @@ class NormHeadNet:
     def build(base_model: Any, len_class: int) -> Any:
         """
         Batch Normalization header
+        GlobalAveragePooling -> BatchNormalization -> Output
+
         Parameters
         ----------
         base_model: Any
@@ -145,6 +153,8 @@ class NormHeadNetV2:
     def build(base_model: Any, len_class: int, dense_unit: int) -> Any:
         """
         Batch Normalization header
+        GlobalAveragePooling -> BatchNormalization -> FC -> BatchNormalization -> Output
+
         Parameters
         ----------
         base_model: Any

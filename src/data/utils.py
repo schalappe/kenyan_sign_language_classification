@@ -34,7 +34,8 @@ def split_and_load_data(preprocess_input=None, test_size: float = 0.2) -> tuple:
 
     # load data
     train_set = [
-        load_image(path, preprocess_input) for path in tqdm(train_set, ncols=100, leave=False)
+        load_image(path, preprocess_input)
+        for path in tqdm(train_set, ncols=100, leave=False)
     ]
 
     # encode
