@@ -10,11 +10,11 @@ from .head_net import NormHeadNetV2
 
 
 class SupervisedContrastiveLoss(tf.keras.losses.Loss):
-    def __init__(self, temperature=1, name=None):
+    def __init__(self, temperature=1, name=None) -> None:
         super(SupervisedContrastiveLoss, self).__init__(name=name)
         self.temperature = temperature
 
-    def __call__(self, labels, feature_vectors, sample_weight=None):
+    def __call__(self, labels, feature_vectors, sample_weight=None) -> tf.Tensor:
         # Normalize feature vectors
         feature_vectors_normalized = tf.math.l2_normalize(feature_vectors, axis=1)
 
@@ -28,7 +28,24 @@ class SupervisedContrastiveLoss(tf.keras.losses.Loss):
         return npairs_multilabel_loss(tf.squeeze(labels), logits)
 
 
-def create_encoder(model: tf.keras.Model, input_shape: tuple, last_layers: float):
+def create_encoder(model: tf.keras.Model, input_shape: tuple, last_layers: float) -> tf.keras.Model:
+    """
+    Create an encoder
+    Parameters
+    ----------
+    model: tf.keras.Model
+        Head of encoder
+
+    input_shape: tuple
+        Dimension of input images
+
+    last_layers: float
+        Percentage of layers to train
+
+    Returns
+    -------
+
+    """
     # Create encoder
     inputs = tf.keras.Input(shape=input_shape)
     outputs = model(inputs)
@@ -50,7 +67,33 @@ def create_classifier(
     hidden_units: int,
     num_classes: int,
     trainable=True,
-):
+) -> tf.keras.Model:
+    """
+    Create a classifier
+    Parameters
+    ----------
+    encoder: tf.keras.Model
+        Header of model
+
+    input_shape: tuple
+        Dimension of input image
+
+    dropout_rate: float
+        Rate of dropout
+
+    hidden_units: int
+        Number of hidden neurons
+
+    num_classes: int
+        Number of class
+
+    trainable: bool
+        Train layers or not
+
+    Returns
+    -------
+
+    """
     for layer in encoder.layers:
         layer.trainable = trainable
 
@@ -71,7 +114,33 @@ def create_classifier_v2(
     hidden_units: int,
     num_classes: int,
     trainable=True,
-):
+) -> tf.keras.Model:
+    """
+    Create a classifier
+    Parameters
+    ----------
+    encoder: tf.keras.Model
+        Header of model
+
+    input_shape: tuple
+        Dimension of input image
+
+    dropout_rate: float
+        Rate of dropout
+
+    hidden_units: int
+        Number of hidden neurons
+
+    num_classes: int
+        Number of class
+
+    trainable: bool
+        Train layers or not
+
+    Returns
+    -------
+
+    """
     for layer in encoder.layers:
         layer.trainable = trainable
 
@@ -91,7 +160,24 @@ def create_classifier_v2(
 
 def add_projection_head(
     encoder: tf.keras.Model, input_shape: tuple, projection_units: int
-):
+) -> tf.keras.Model:
+    """
+    Add projection to encoder
+
+    Parameters
+    ----------
+    encoder: tf.keras.Model
+
+    input_shape: tuple
+        Dimension of input image
+
+    projection_units: int
+        length of encode image
+
+    Returns
+    -------
+
+    """
     inputs = tf.keras.Input(shape=input_shape)
     features = encoder(inputs)
     outputs = tf.keras.layers.Dense(projection_units, activation="relu")(features)
