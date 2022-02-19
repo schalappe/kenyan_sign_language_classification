@@ -140,7 +140,7 @@ def prepare_from_tfrecord_v2(tfrecord: str, batch: int, train: bool, dims: tuple
     if train:
         # Apply an augmentation only in 50% of the cases.
         dataset = dataset.map(
-            lambda image, label: (random_augmentation(image, percentage=0.5), label),
+            lambda image, label: (random_augmentation(image, percentage=0.5, noise=True), label),
             num_parallel_calls=tf.data.AUTOTUNE,
         )
 

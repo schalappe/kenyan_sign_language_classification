@@ -9,8 +9,8 @@ import tensorflow as tf
 
 from addons import models
 from src.config import CLASS_NAMES, DIMS_MODEL, FEATURES_PATH, MODEL_PATH
-from src.data import prepare_from_tfrecord
-from src.models import NormHeadNetV2
+from src.data import prepare_from_tfrecord, prepare_from_tfrecord_v2
+from src.models import FCHeadNetV2
 
 # Argument
 parser = argparse.ArgumentParser()
@@ -34,10 +34,12 @@ strategy = tf.distribute.MirroredStrategy()
 
 # initialize the number of epochs to train
 BS = 32
+epochs_init = 20
+epochs_last = 30
 
 # load dataset
 print("\n[INFO]: Load datase")
-train_set = prepare_from_tfrecord(
+train_set = prepare_from_tfrecord_v2(
     tfrecord=join(FEATURES_PATH, f"Train_{args.feature}.tfrecords"),
     batch=BS,
     train=True,
@@ -64,14 +66,14 @@ with strategy.scope():
     head.trainable = False
 
     # Rebuild top
-    outputs = NormHeadNetV2.build(
+    outputs = FCHeadNetV2.build(
         base_model=head, len_class=len(CLASS_NAMES), dense_unit=args.unit
     )
 
     # Compile
     model = tf.keras.Model(head.input, outputs)
     optimizer = tf.keras.optimizers.Adam(
-        learning_rate=args.lr_init, decay=args.lr_init / 20
+        learning_rate=args.lr_init,  decay=args.lr_init / epochs_init
     )
     model.compile(
         optimizer=optimizer,
@@ -84,7 +86,7 @@ print("\n[INFO] training: warm up ...")
 H = model.fit(
     train_set,
     validation_data=test_set,
-    epochs=20,
+    epochs=epochs_init,
     steps_per_epoch=314,
     validation_steps=39,
 )
@@ -98,9 +100,12 @@ print(f"[INFO] loss after warn up: {loss}%")
 
 # unfreeze layers
 last_layers = int(args.layers * len(model.layers))
-for layer in model.layers[:last_layers]:
-    if not isinstance(layer, tf.keras.layers.BatchNormalization):
-        layer.trainable = True
+if last_layers == 0:
+    model.trainable = True
+else:
+    for layer in model.layers[last_layers:]:
+        if not isinstance(layer, tf.keras.layers.BatchNormalization):
+            layer.trainable = True
 
 optimizer = tf.keras.optimizers.SGD(learning_rate=args.lr_last)
 model.compile(
@@ -127,7 +132,7 @@ print("\n[INFO] training: fine tune...")
 H = model.fit(
     train_set,
     validation_data=test_set,
-    epochs=50,
+    epochs=epochs_init+epochs_last,
     callbacks=callbacks,
     initial_epoch=H.epoch[-1],
     steps_per_epoch=314,

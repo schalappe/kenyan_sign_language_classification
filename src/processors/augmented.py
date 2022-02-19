@@ -120,7 +120,7 @@ def gaussian_noise(images: tf.Tensor) -> tf.Tensor:
 
 
 @tf.function
-def random_augmentation(images: tf.Tensor, percentage: float = 0.75) -> tf.Tensor:
+def random_augmentation(images: tf.Tensor, percentage: float = 0.75, noise: bool = False) -> tf.Tensor:
     """
     Apply random augmentation
     Parameters
@@ -130,6 +130,9 @@ def random_augmentation(images: tf.Tensor, percentage: float = 0.75) -> tf.Tenso
 
     percentage: float
         Percentage of case where apply augmentation
+
+    noise: bool
+        Add noise to augmentation
 
     Returns
     -------
@@ -141,10 +144,15 @@ def random_augmentation(images: tf.Tensor, percentage: float = 0.75) -> tf.Tenso
         random_saturation,
         random_brightness,
         random_contrast,
-        # gaussian_noise,
     ]
+
+    # add noise or not
+    if noise:
+        augmentation.append(gaussian_noise)
+
+    # apply augmentation
     for func in augmentation:
-        # Apply an augmentation only in 25% of the cases.
+        # Apply an augmentation
         if tf.random.uniform([], 0, 1) > percentage:
             images = func(images)
 

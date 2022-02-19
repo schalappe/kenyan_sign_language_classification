@@ -1,0 +1,22 @@
+name: kenyan_sign_language
+channels:
+    - apple
+    - conda-forge
+dependencies:
+    - python<3.10
+    - pip>=19.0
+    - jupyter
+    - tensorflow-deps
+    - scikit-learn
+    - scipy
+    - pandas
+    - matplotlib
+    - pillow
+    - tqdm
+    - requests
+    - rich
+    - h5py
+    - pyyaml
+    - pip:
+        - tensorflow-macos
+        - tensorflow-metal
