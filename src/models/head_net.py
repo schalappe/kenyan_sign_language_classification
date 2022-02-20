@@ -106,7 +106,7 @@ class FCHeadNetV3:
         x = tf.keras.layers.AveragePooling2D(pool_size=(7, 7))(base_model.output)
         x = tf.keras.layers.Flatten(name="flatten")(x)
         x = tf.keras.layers.Dense(2 * dense_unit, activation="relu")(x)
-        x = tf.keras.layers.Dropout(0.5)(x)
+        x = tf.keras.layers.Dropout(0.2)(x)
         x = tf.keras.layers.Dense(dense_unit, activation="relu")(x)
         x = tf.keras.layers.Dropout(0.5)(x)
 

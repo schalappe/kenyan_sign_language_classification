@@ -7,9 +7,9 @@ import argparse
 import tensorflow as tf
 from rich.console import Console
 from rich.table import Table
-from sklearn.model_selection import ParameterSampler
+from sklearn.model_selection import ParameterGrid
 
-from src.addons import GCSGD, GCAdam
+from src.addons import GCSGD, GCAdam, GCRMSprop
 from src.config import CLASS_NAMES, DIMS_MODEL
 from src.data import return_dataset
 from src.models import FineTuneModel
@@ -21,17 +21,22 @@ parser.add_argument("--feature", help="Which feature to use", required=True)
 args = parser.parse_args()
 
 # HyperParameters
+optimizers = {
+    "Adam": GCAdam,
+    "RMSprop": GCRMSprop,
+    "SGD": GCSGD,
+}
 params_grid = {
     "LR_init": [1e-2, 1e-3, 1e-4],
-    "unit_denses": [128 * 2**i for i in range(4)],
-    "best_layers": [0.5, 0.75],
+    "unit_denses": [128 * 2**i for i in range(3)],
+    "optimizer": optimizers.keys(),
 }
-params_list = list(ParameterSampler(params_grid, n_iter=8))
+
+params_list = list(ParameterGrid(params_grid))
 
 # parameters
 BS = 32
 epochs_init = 20
-epochs_last = 30
 
 # load dataset
 print("\n[INFO]: Load datase")
@@ -42,7 +47,7 @@ table = Table(title="Parameters")
 table.add_column("N°")
 table.add_column("LR_init")
 table.add_column("unit_denses")
-table.add_column("best_layers")
+table.add_column("optimizer")
 
 # results
 results = []
@@ -56,7 +61,7 @@ for index, params in enumerate(params_list):
         str(index + 1),
         str(params["LR_init"]),
         str(params["unit_denses"]),
-        str(params["best_layers"]),
+        str(params["optimizer"]),
     )
     console = Console()
     console.print(table)
@@ -73,7 +78,7 @@ for index, params in enumerate(params_list):
     )
 
     # Compile
-    optimizer = GCAdam(
+    optimizer = optimizers[params["optimizer"]](
         learning_rate=params["LR_init"], decay=params["LR_init"] / epochs_init
     )
     model.compile(
@@ -84,43 +89,10 @@ for index, params in enumerate(params_list):
 
     # train the head of the network
     print("\n[INFO] training: warm up ...")
-    H_init = model.fit(
-        train_set,
-        validation_data=test_set,
-        epochs=epochs_init,
-        steps_per_epoch=156,
-        validation_steps=39,
-        verbose=2,
-    )
-
-    # ############ FINE TURN #############
-
-    # unfreeze layers
-    last_layers = int(params["best_layers"] * len(model.layers))
-    for layer in model.layers[last_layers:]:
-        if not isinstance(layer, tf.keras.layers.BatchNormalization):
-            layer.trainable = True
-
-    optimizer = GCSGD(learning_rate=1e-3)
-    model.compile(
-        optimizer=optimizer,
-        loss="categorical_crossentropy",
-        metrics=["categorical_accuracy"],
-    )
-
-    # callbacks
-    callbacks = [
-        tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=8),
-    ]
-
-    # train the head of the network
-    print("\n[INFO] training: fine tune...")
     model.fit(
         train_set,
         validation_data=test_set,
-        epochs=epochs_init + epochs_last,
-        initial_epoch=H_init.epoch[-1],
-        callbacks=callbacks,
+        epochs=epochs_init,
         steps_per_epoch=156,
         validation_steps=39,
         verbose=2,
@@ -134,7 +106,7 @@ for index, params in enumerate(params_list):
         (
             params["LR_init"],
             params["unit_denses"],
-            params["best_layers"],
+            params["optimizer"],
             accuracy,
             loss,
         )
@@ -146,7 +118,7 @@ bilan = Table(title="Bilan for fine tune")
 bilan.add_column("N°")
 bilan.add_column("LR_init")
 bilan.add_column("unit_denses")
-bilan.add_column("best_layers")
+bilan.add_column("optimizer")
 bilan.add_column("accuracy")
 bilan.add_column("loss")
 

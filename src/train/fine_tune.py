@@ -7,10 +7,10 @@ from os.path import join
 
 import tensorflow as tf
 
-from addons import models
-from src.config import CLASS_NAMES, DIMS_MODEL, FEATURES_PATH, MODEL_PATH
-from src.data import prepare_from_tfrecord, prepare_from_tfrecord_v2
-from src.models import FCHeadNetV2
+from src.addons import GCSGD, GCAdam
+from src.config import CLASS_NAMES, DIMS_MODEL, MODEL_PATH
+from src.data import return_dataset
+from src.models import FineTuneModel
 
 # Argument
 parser = argparse.ArgumentParser()
@@ -39,42 +39,20 @@ epochs_last = 30
 
 # load dataset
 print("\n[INFO]: Load datase")
-train_set = prepare_from_tfrecord_v2(
-    tfrecord=join(FEATURES_PATH, f"Train_{args.feature}.tfrecords"),
-    batch=BS,
-    train=True,
-    dims=DIMS_MODEL,
-)
-
-test_set = prepare_from_tfrecord(
-    tfrecord=join(FEATURES_PATH, f"Test_{args.feature}.tfrecords"),
-    batch=BS,
-    train=False,
-    dims=DIMS_MODEL,
-)
+train_set, test_set = return_dataset(family_model=args.feature, batch_size=BS)
 
 # construct our model
 print("\n[INFO]: Create model")
 with strategy.scope():
-    head = models[args.model](
-        input_shape=DIMS_MODEL,
-        include_top=False,
-        weights="imagenet",
-    )
-
-    # Freeze the pretrained weights
-    head.trainable = False
-
-    # Rebuild top
-    outputs = FCHeadNetV2.build(
-        base_model=head, len_class=len(CLASS_NAMES), dense_unit=args.unit
+    model = FineTuneModel.build(
+        model_name=args.model,
+        dims=DIMS_MODEL,
+        num_class=len(CLASS_NAMES),
+        hidden_unit=args.unit,
     )
 
     # Compile
-    model = tf.keras.Model(head.input, outputs)
-    optimizer = tf.keras.optimizers.Adam(
-        learning_rate=args.lr_init,  decay=args.lr_init / epochs_init
-    )
+    optimizer = GCAdam(learning_rate=args.lr_init, decay=args.lr_init / epochs_init)
     model.compile(
         optimizer=optimizer,
         loss="categorical_crossentropy",
@@ -83,11 +61,11 @@ with strategy.scope():
 
 # train the head of the network
 print("\n[INFO] training: warm up ...")
-H = model.fit(
+H_init = model.fit(
     train_set,
     validation_data=test_set,
     epochs=epochs_init,
-    steps_per_epoch=314,
+    steps_per_epoch=156,
     validation_steps=39,
 )
 
@@ -100,14 +78,11 @@ print(f"[INFO] loss after warn up: {loss}%")
 
 # unfreeze layers
 last_layers = int(args.layers * len(model.layers))
-if last_layers == 0:
-    model.trainable = True
-else:
-    for layer in model.layers[last_layers:]:
-        if not isinstance(layer, tf.keras.layers.BatchNormalization):
-            layer.trainable = True
+for layer in model.layers[last_layers:]:
+    if not isinstance(layer, tf.keras.layers.BatchNormalization):
+        layer.trainable = True
 
-optimizer = tf.keras.optimizers.SGD(learning_rate=args.lr_last)
+optimizer = GCSGD(learning_rate=args.lr_last)
 model.compile(
     optimizer=optimizer,
     loss="categorical_crossentropy",
@@ -116,7 +91,7 @@ model.compile(
 
 # callbacks
 callbacks = [
-    tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=5),
+    tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=8),
     tf.keras.callbacks.ModelCheckpoint(
         join(MODEL_PATH, f"best_{args.model}.h5"),
         monitor="val_loss",
@@ -129,13 +104,13 @@ callbacks = [
 
 # train the head of the network
 print("\n[INFO] training: fine tune...")
-H = model.fit(
+model.fit(
     train_set,
     validation_data=test_set,
-    epochs=epochs_init+epochs_last,
+    epochs=epochs_init + epochs_last,
     callbacks=callbacks,
-    initial_epoch=H.epoch[-1],
-    steps_per_epoch=314,
+    initial_epoch=H_init.epoch[-1],
+    steps_per_epoch=156,
     validation_steps=39,
 )
 

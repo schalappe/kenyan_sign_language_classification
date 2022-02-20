@@ -120,7 +120,9 @@ def gaussian_noise(images: tf.Tensor) -> tf.Tensor:
 
 
 @tf.function
-def random_augmentation(images: tf.Tensor, percentage: float = 0.75, noise: bool = False) -> tf.Tensor:
+def random_augmentation(
+    images: tf.Tensor, percentage: float = 0.75, noise: bool = False
+) -> tf.Tensor:
     """
     Apply random augmentation
     Parameters

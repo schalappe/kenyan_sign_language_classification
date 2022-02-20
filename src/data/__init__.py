@@ -1,5 +1,5 @@
-from .dataset import write_images_to_tfr
-from .pipeline import prepare_from_tfrecord, prepare_from_tfrecord_v2
+from .dataset import return_dataset, write_images_to_tfr
+from .pipeline import prepare_from_tfrecord
 from .utils import (
     _bytes_feature,
     _float_feature,

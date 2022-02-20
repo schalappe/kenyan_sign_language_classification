@@ -1,3 +1,4 @@
+from .addons import model_preprocess
 from .augmented import (
     gaussian_noise,
     random_augmentation,

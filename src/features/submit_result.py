@@ -10,7 +10,6 @@ import tensorflow as tf
 from pandas import read_csv
 from tqdm import tqdm
 
-from addons import model_preprocess
 from src.config import (
     CLASS_NAMES,
     DIMS_MODEL,
@@ -19,7 +18,7 @@ from src.config import (
     OUTPUT_CSV,
     SUBMIT_PATH,
 )
-from src.processors import load_image
+from src.processors import load_image, model_preprocess
 
 # Argument
 parser = argparse.ArgumentParser()

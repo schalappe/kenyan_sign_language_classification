@@ -4,9 +4,9 @@
 """
 from os.path import join
 
-from addons import model_preprocess
 from src.config import FEATURES_PATH
 from src.data import split_and_load_data, write_images_to_tfr
+from src.processors import model_preprocess
 
 for index, model in enumerate(model_preprocess.keys()):
     print(f"f[INFO]: Model {index} /{len(model_preprocess)}")
