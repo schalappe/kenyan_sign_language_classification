@@ -10,6 +10,7 @@ import tensorflow as tf
 from pandas import read_csv
 from tqdm import tqdm
 
+from src.addons import GCAdam
 from src.config import (
     CLASS_NAMES,
     DIMS_MODEL,
@@ -33,7 +34,9 @@ submit_set = read_csv(OUTPUT_CSV, header="infer")
 submit_set = [join(IMAGES_PATH, image + ".jpg") for image in submit_set.img_IDS]
 
 print("[INFO]: loading model ...")
-model = tf.keras.models.load_model(join(MODEL_PATH, f"best_{args.model}.h5"))
+model = tf.keras.models.load_model(
+    join(MODEL_PATH, f"best_{args.model}.h5"),  # custom_objects={"GCAdam": GCAdam}
+)
 
 # create submit file
 submit_csv = join(SUBMIT_PATH, f"sub-{args.model}-best.csv")

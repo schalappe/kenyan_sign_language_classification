@@ -82,7 +82,7 @@ for layer in model.layers[last_layers:]:
     if not isinstance(layer, tf.keras.layers.BatchNormalization):
         layer.trainable = True
 
-optimizer = GCSGD(learning_rate=args.lr_last)
+optimizer = GCAdam(learning_rate=args.lr_last)
 model.compile(
     optimizer=optimizer,
     loss="categorical_crossentropy",
@@ -91,7 +91,6 @@ model.compile(
 
 # callbacks
 callbacks = [
-    tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=8),
     tf.keras.callbacks.ModelCheckpoint(
         join(MODEL_PATH, f"best_{args.model}.h5"),
         monitor="val_loss",
